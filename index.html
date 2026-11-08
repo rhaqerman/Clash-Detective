@@ -1,0 +1,402 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Clash Detective Activity Box</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a box lid (title + contents tabs) over one "sheet" at a time, like pulling items out of a pack */
+:root{
+  --paper:#eef0f1; --sheet:#ffffff; --ink:#26292b; --muted:#5f666b; --line:#c9cfd3;
+  --red:#d6102c; --red-ink:#ffffff; --svc:#1f6fb2; --hivis:#f3c316; --grid:#dfe4e7; --soft:#f6f7f8;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Source Sans 3","Segoe UI",Arial,sans-serif;
+  --mono:"IBM Plex Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#16191b; --sheet:#202427; --ink:#e8eaeb; --muted:#a3abb0; --line:#3a4146;
+  --red:#ff4a5e; --red-ink:#1a0d10; --svc:#6cb4ff; --hivis:#f3c316; --grid:#2a3034; --soft:#262b2e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#16191b; --sheet:#202427; --ink:#e8eaeb; --muted:#a3abb0; --line:#3a4146;
+  --red:#ff4a5e; --red-ink:#1a0d10; --svc:#6cb4ff; --hivis:#f3c316; --grid:#2a3034; --soft:#262b2e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:400 1.02rem/1.55 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1040px;margin:0 auto;display:grid;gap:20px}
+h1,h2,h3{font-family:var(--display);font-weight:700;line-height:1.05;text-wrap:balance;margin:0;letter-spacing:.01em}
+h1{font-size:clamp(2.2rem,6vw,3.6rem);text-transform:uppercase}
+h2{font-size:1.9rem;text-transform:uppercase}
+h3{font-size:1.3rem}
+p{margin:0}
+.label{font:600 .74rem/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* lid */
+.lid{background:var(--sheet);border:1px solid var(--line);border-top:10px solid var(--red);padding:22px 22px 0;display:grid;gap:14px}
+.lid-top{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between;align-items:flex-start}
+.tape{background:repeating-linear-gradient(-45deg,var(--hivis) 0 14px,var(--ink) 14px 28px);height:8px;margin:0 -22px}
+.facts{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);padding:4px 10px;font-size:.88rem;background:var(--soft)}
+.chip b{font-family:var(--mono);font-weight:500}
+.draft{font-size:.88rem;color:var(--muted);max-width:60ch}
+nav{display:flex;flex-wrap:wrap;gap:0;border-top:1px solid var(--line);margin:0 -22px}
+nav a{flex:1 1 auto;text-align:center;padding:12px 14px;color:var(--ink);text-decoration:none;font:600 1rem/1 var(--display);letter-spacing:.06em;text-transform:uppercase;border-right:1px solid var(--line)}
+nav a:last-child{border-right:0}
+nav a[aria-current="page"]{background:var(--red);color:var(--red-ink)}
+nav a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--hivis);outline-offset:2px}
+
+/* sheet */
+.sheet{background:var(--sheet);border:1px solid var(--line);padding:26px clamp(16px,4vw,36px);display:grid;gap:22px}
+.sheet-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline;border-bottom:2px solid var(--ink);padding-bottom:10px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.cols>*{min-width:0}
+ul,ol{margin:0;padding-left:1.2em;display:grid;gap:6px}
+.box-list{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.box-list a{display:grid;gap:4px;padding:14px;border:1px solid var(--line);color:var(--ink);text-decoration:none;background:var(--soft)}
+.box-list a:hover{border-color:var(--red)}
+.box-list .n{font:600 1.15rem/1.1 var(--display);text-transform:uppercase}
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:.95rem}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--ink);color:var(--sheet);font:600 .9rem/1.2 var(--body);letter-spacing:.04em}
+td.t{font-family:var(--mono);white-space:nowrap}
+.check{list-style:none;padding:0}
+.check label{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.check input{margin-top:.3em;width:1.05em;height:1.05em;accent-color:var(--red)}
+.callout{border-left:6px solid var(--hivis);background:var(--soft);padding:12px 16px}
+.scenario{border:2px dashed var(--ink);padding:18px;display:grid;gap:8px;background:var(--soft)}
+.task{display:grid;gap:8px;padding-top:14px;border-top:1px solid var(--line)}
+.task h3 span{font-family:var(--mono);font-size:.95rem;color:var(--red);margin-right:8px}
+input[type=text],select,textarea{font:inherit;color:var(--ink);background:var(--sheet);border:1px solid var(--line);padding:8px 10px;width:100%}
+textarea{min-height:84px;resize:vertical}
+.haz{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.plan{border:1px solid var(--line);background:var(--sheet)}
+.plan svg{display:block;width:100%;height:auto}
+.stamp{display:inline-block;border:2px solid var(--red);color:var(--red);font:700 .8rem/1 var(--body);letter-spacing:.1em;text-transform:uppercase;padding:5px 8px;transform:rotate(-2deg)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 16px}
+.form-grid label{display:grid;gap:4px;font-size:.9rem;color:var(--muted)}
+/* cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.card{perspective:900px;background:none;border:0;padding:0;cursor:pointer;text-align:left;font:inherit;color:inherit;min-height:250px}
+.card-in{position:relative;width:100%;height:100%;min-height:250px;transition:transform .5s;transform-style:preserve-3d}
+.card[aria-pressed="true"] .card-in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;padding:16px;display:grid;align-content:start;gap:10px;border:2px solid var(--ink)}
+.front{background:var(--sheet)}
+.front .kicker{background:var(--hivis);color:#26292b;font:700 .8rem/1 var(--body);letter-spacing:.1em;text-transform:uppercase;padding:6px 8px;justify-self:start}
+.back{background:var(--ink);color:var(--sheet);transform:rotateY(180deg)}
+.back .kicker{color:var(--hivis);font:700 .8rem/1 var(--body);letter-spacing:.1em;text-transform:uppercase}
+.hint{font-size:.85rem;color:var(--muted)}
+.back .hint{color:var(--line)}
+.photo{border:2px dashed var(--line);min-height:180px;display:grid;place-items:center;text-align:center;padding:12px;color:var(--muted)}
+.photo img{max-height:260px;object-fit:contain}
+.sign{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.sign div{border-bottom:1px solid var(--ink);padding-top:28px;font-size:.88rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.card-in{transition:none}}
+
+.tools{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.btn{font:600 .95rem/1 var(--body);padding:10px 14px;border:2px solid var(--ink);background:var(--sheet);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--red);border-color:var(--red);color:var(--red-ink)}
+.score{display:flex;gap:16px;flex-wrap:wrap}
+.score div{border:1px solid var(--line);padding:8px 12px;background:var(--soft);display:grid;gap:2px;min-width:110px}
+.score b{font:600 1.6rem/1 var(--mono)}
+.drawing{border:1px solid var(--line);background:var(--sheet);overflow-x:auto}
+.drawing svg{display:block;width:100%;min-width:520px;height:auto;cursor:crosshair}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.88rem;color:var(--muted)}
+.legend i{display:inline-block;width:22px;height:4px;vertical-align:middle;margin-right:6px}
+.found-list{list-style:none;padding:0;display:grid;gap:6px}
+.found-list li{border-left:5px solid var(--red);padding:6px 10px;background:var(--soft)}
+input[type=range]{accent-color:var(--svc);width:180px}
+.msg{min-height:1.4em;font-weight:600}
+[hidden]{display:none!important}
+</style>
+
+<div class="wrap">
+  <header class="lid">
+    <div class="lid-top">
+      <div style="display:grid;gap:8px;min-width:0">
+        <span class="label">SRM Work Experience Programme · Activity 3 · Prototype box</span>
+        <h1>Clash Detective</h1>
+      </div>
+      <span class="stamp">Draft prototype</span>
+    </div>
+    <div class="facts">
+      <span class="chip">Time <b>60 min</b></span>
+      <span class="chip">Host: design manager</span>
+      <span class="chip">Links: building services engineer · site engineer</span>
+      <span class="chip">Site office</span>
+      <span class="chip">One student, age 17</span>
+    </div>
+    <p class="draft">Built by the Northumbria student team for Sir Robert McAlpine. The drawings in this box are simplified illustrations of a single-bed delivery room with five clashes planted on purpose; replace them with edited versions of the project's own drawings before use.</p>
+    <div class="tape" aria-hidden="true"></div>
+    <nav aria-label="Box contents">
+      <a href="#box">In the box</a>
+      <a href="#host">Host guide</a>
+      <a href="#investigate">Investigate</a>
+      <a href="#documents">Documents</a>
+      <a href="#tq">TQ form</a>
+      <a href="#answers">Answer sheet</a>
+      <a href="#portfolio">Portfolio page</a>
+    </nav>
+  </header>
+
+  <!-- IN THE BOX -->
+  <section class="sheet" data-view="box">
+    <div class="sheet-head"><h2>What's in the box</h2><span class="label">Open in this order</span></div>
+    <p style="max-width:65ch">The architect draws the room. The building services engineer draws the pipes, ducts and outlets. When the two drawings are laid over each other, things sometimes end up in the same place. The student finds five planted clashes against the clock, then writes a technical query (TQ) to the design manager, the way a site engineer would.</p>
+    <ul class="box-list">
+      <li><a href="#host"><span class="n">Host guide</span><span>Aim, run sheet, questions to ask</span></a></li>
+      <li><a href="#investigate"><span class="n">Investigate</span><span>Overlay the drawings and find the clashes</span></a></li>
+      <li><a href="#documents"><span class="n">Documents</span><span>Architectural plan and services drawing, separately</span></a></li>
+      <li><a href="#tq"><span class="n">TQ form</span><span>Raise a query on one clash</span></a></li>
+      <li><a href="#answers"><span class="n">Answer sheet</span><span>All five clashes, why they matter, who fixes them</span></a></li>
+      <li><a href="#portfolio"><span class="n">Portfolio page</span><span>Reflection and host sign-off</span></a></li>
+    </ul>
+    <div class="callout"><b>Why this activity:</b> it uses edited project drawings, as Dr Ponton suggested, and shows how the design manager, building services engineer and site engineer pass information to each other through a TQ. It reuses on any project by editing that project's drawings.</div>
+  </section>
+
+  <!-- HOST GUIDE -->
+  <section class="sheet" data-view="host" hidden>
+    <div class="sheet-head"><h2>Host guide</h2><span class="label">Read in 3 minutes</span></div>
+    <p style="max-width:65ch"><b>Aim:</b> the student learns why drawings from different designers have to be coordinated, how to read a plan and a services drawing together, and how a TQ moves a problem from site to the design team.</p>
+    <div class="cols">
+      <div style="display:grid;gap:10px">
+        <h3>Before the session</h3>
+        <ul class="check">
+          <li><label><input type="checkbox" id="pre1"> Book 60 minutes, plus 10 minutes of the building services engineer's time at the end</label></li>
+          <li><label><input type="checkbox" id="pre2"> Open the box on a laptop or tablet, or print the documents</label></li>
+          <li><label><input type="checkbox" id="pre3"> Read the answer sheet so you know the five clashes</label></li>
+        </ul>
+      </div>
+      <div style="display:grid;gap:10px">
+        <h3>Three questions to ask</h3>
+        <ol>
+          <li>Why do two professional designers end up drawing things in the same place?</li>
+          <li>What would happen if nobody spotted this clash until the wall was built?</li>
+          <li>Who should answer your TQ, and how quickly?</li>
+        </ol>
+      </div>
+    </div>
+    <div style="display:grid;gap:10px">
+      <h3>Run sheet</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Time</th><th>What happens</th><th>You do</th></tr></thead>
+        <tbody>
+          <tr><td class="t">0:00–0:10</td><td>Briefing</td><td>Explain your role, show the two drawings separately, explain what a clash and a TQ are</td></tr>
+          <tr><td class="t">0:10–0:35</td><td>Investigate</td><td>Start the 20-minute timer; let the student overlay the drawings and hunt; give a hint only if they are stuck for 5 minutes</td></tr>
+          <tr><td class="t">0:35–0:50</td><td>Write a TQ</td><td>Student picks one clash and completes the TQ form</td></tr>
+          <tr><td class="t">0:50–1:00</td><td>Answer the TQ</td><td>You and the building services engineer "answer" it; explain that on site the site engineer raises TQs and the design team responds</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="callout"><b>Hints if needed:</b> look where pipes or ducts cross an opening; look at what sits next to water; check that outlets are on the wall the room data sheet expects.</div>
+  </section>
+
+  <!-- INVESTIGATE -->
+  <section class="sheet" data-view="investigate" hidden>
+    <div class="sheet-head"><h2>Investigate</h2><span class="label">Find five clashes in 20 minutes</span></div>
+    <p style="max-width:65ch">The services drawing is laid over the architect's plan. Slide the services layer to fade it in and out, then click wherever two things are in the same place.</p>
+    <div class="tools">
+      <button class="btn primary" type="button" id="start">Start 20-minute timer</button>
+      <label for="opacity" class="label">Services layer</label>
+      <input type="range" id="opacity" min="0" max="100" value="100">
+      <div class="score">
+        <div><span class="label">Found</span><b id="found">0/5</b></div>
+        <div><span class="label">Time left</span><b id="clock">20:00</b></div>
+        <div><span class="label">Misses</span><b id="miss">0</b></div>
+      </div>
+    </div>
+    <div class="legend"><span><i style="background:var(--ink)"></i>Architect's plan</span><span><i style="background:var(--svc)"></i>Services drawing</span><span>Grid: A–D across, 1–4 down</span></div>
+    <div class="drawing"><svg id="overlay" viewBox="0 0 700 560" role="img" aria-label="Architectural plan of a single-bed delivery room with the services drawing laid over it"></svg></div>
+    <p class="msg" id="msg" aria-live="polite"></p>
+    <ol class="found-list" id="foundlist"></ol>
+  </section>
+
+  <!-- DOCUMENTS -->
+  <section class="sheet" data-view="documents" hidden>
+    <div class="sheet-head"><h2>Documents</h2><span class="label">Illustrative: replace with the project's own</span></div>
+    <div class="cols">
+      <div style="display:grid;gap:8px">
+        <h3>Architectural plan</h3>
+        <p class="hint">Drawn by the architect. Shows walls, doors, window, fittings and furniture.</p>
+        <div class="drawing"><svg id="arch" viewBox="0 0 700 560" role="img" aria-label="Architectural plan of a single-bed delivery room"></svg></div>
+      </div>
+      <div style="display:grid;gap:8px">
+        <h3>Services drawing</h3>
+        <p class="hint">Drawn by the building services engineer. Shows pipes, ducts, outlets and heating.</p>
+        <div class="drawing"><svg id="svc" viewBox="0 0 700 560" role="img" aria-label="Services drawing of a single-bed delivery room"></svg></div>
+      </div>
+    </div>
+    <div style="display:grid;gap:8px">
+      <h3>Room data sheet extract</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Item</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td>Medical gas outlets (O₂, vacuum, medical air)</td><td>On the bed-head wall, within reach of the bed</td></tr>
+          <tr><td>Clinical wash-hand basin</td><td>Near the room door; keep the area around it clear of electrical outlets</td></tr>
+          <tr><td>Doors</td><td>Clear openings, nothing fixed across them; wide enough for a bed</td></tr>
+          <tr><td>Window</td><td>Openable; nothing fixed across the opening</td></tr>
+          <tr><td>Ventilation</td><td>Supply duct in the ceiling void</td></tr>
+        </tbody>
+      </table></div>
+      <p class="hint">Simplified for this activity.</p>
+    </div>
+  </section>
+
+  <!-- TQ -->
+  <section class="sheet" data-view="tq" hidden>
+    <div class="sheet-head"><h2>Technical query (TQ)</h2><span class="label">Pick one clash</span></div>
+    <form class="form-grid" id="tqform">
+      <label>TQ number<input type="text" id="tq-no" value="TQ-001"></label>
+      <label>Raised by<input type="text" id="tq-by" placeholder="Your name, site engineer"></label>
+      <label>To<input type="text" id="tq-to" value="Design manager"></label>
+      <label>Drawings<input type="text" id="tq-dwg" value="Architectural plan; services drawing"></label>
+      <label>Location (grid)<input type="text" id="tq-loc" placeholder="For example C4"></label>
+      <label>Answer needed by<input type="text" id="tq-date" placeholder="Date"></label>
+    </form>
+    <div style="display:grid;gap:8px">
+      <label class="label" for="tq-q">The problem</label>
+      <textarea id="tq-q" placeholder="What is in the same place, and why it matters"></textarea>
+      <label class="label" for="tq-s">Suggested solution</label>
+      <textarea id="tq-s" placeholder="What could be moved, and where"></textarea>
+    </div>
+    <div class="tools">
+      <button class="btn" type="button" id="copytq">Copy TQ text</button>
+      <span class="hint" id="copymsg" aria-live="polite"></span>
+    </div>
+    <textarea id="tqout" readonly hidden style="min-height:150px"></textarea>
+  </section>
+
+  <!-- ANSWERS -->
+  <section class="sheet" data-view="answers" hidden>
+    <div class="sheet-head"><h2>Answer sheet</h2><span class="label">For the host</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Clash</th><th>Grid</th><th>Why it matters</th><th>Likely fix</th></tr></thead>
+      <tbody id="anstable"></tbody>
+    </table></div>
+    <div class="callout"><b>Who does what:</b> on site, the site engineer spots the problem and raises the TQ. The design manager passes it to the right designer (here the building services engineer), gets an answer and issues a revised drawing. The QS checks whether the change costs money.</div>
+  </section>
+
+  <!-- PORTFOLIO -->
+  <section class="sheet" data-view="portfolio" hidden>
+    <div class="sheet-head"><h2>Portfolio page</h2><span class="label">Student keeps this</span></div>
+    <div class="cols">
+      <div style="display:grid;gap:12px">
+        <label class="label" for="pf-score">My score</label>
+        <input type="text" id="pf-score" placeholder="Clashes found and time taken">
+        <label class="label" for="pf-1">The clash I wrote a TQ for, and why I chose it</label>
+        <textarea id="pf-1"></textarea>
+      </div>
+      <div style="display:grid;gap:12px">
+        <label class="label" for="pf-2">What I learned about how designers and site teams work together</label>
+        <textarea id="pf-2"></textarea>
+        <label class="label" for="pf-3">Roles I worked with today</label>
+        <input type="text" id="pf-3" value="Design manager, building services engineer, site engineer">
+      </div>
+    </div>
+    <div class="sign"><div>Student name</div><div>Host signature</div><div>Date</div></div>
+  </section>
+</div>
+
+<script>
+const F = 'font-family="Source Sans 3, Arial, sans-serif"';
+const M = 'font-family="IBM Plex Mono, monospace"';
+const GRID = `<g>
+  ${[80,260,440,620].map((x,i)=>`<line x1="${x}" y1="22" x2="${x}" y2="538" stroke="var(--grid)" stroke-dasharray="6 6"/><text x="${x-5}" y="16" ${M} font-size="13" fill="var(--muted)">${'ABCD'[i]}</text>`).join('')}
+  ${[60,207,353,500].map((y,i)=>`<line x1="40" y1="${y}" x2="660" y2="${y}" stroke="var(--grid)" stroke-dasharray="6 6"/><text x="20" y="${y+5}" ${M} font-size="13" fill="var(--muted)">${i+1}</text>`).join('')}
+</g>`;
+const ARCH = `<g fill="none" stroke="var(--ink)">
+  <!-- outer walls with openings: window A2-A3 (y180-380), main door x380-500 -->
+  <path d="M80 60 H620 V500 H500 M380 500 H80 V380 M80 180 V60" stroke-width="8"/>
+  <line x1="80" y1="180" x2="80" y2="380" stroke-width="2"/><line x1="72" y1="180" x2="72" y2="380" stroke-width="2"/><line x1="88" y1="180" x2="88" y2="380" stroke-width="2"/>
+  <text x="96" y="176" ${F} font-size="13" fill="var(--ink)" stroke="none">window</text>
+  <!-- main door -->
+  <line x1="380" y1="500" x2="380" y2="380" stroke-width="3"/><path d="M380 380 A120 120 0 0 1 500 500" stroke-dasharray="5 5" stroke-width="1.5"/>
+  <text x="320" y="530" ${F} font-size="13" fill="var(--ink)" stroke="none">main door</text>
+  <!-- en-suite -->
+  <path d="M440 60 V220 H470 M540 220 H620" stroke-width="6"/>
+  <line x1="540" y1="220" x2="540" y2="290" stroke-width="2.5"/><path d="M540 290 A70 70 0 0 1 470 220" stroke-dasharray="5 5" stroke-width="1.5"/>
+  <text x="470" y="132" ${F} font-size="14" font-weight="700" fill="var(--ink)" stroke="none">EN-SUITE</text>
+  <rect x="455" y="72" width="44" height="30" rx="8" stroke-width="2"/><text x="458" y="118" ${F} font-size="11" fill="var(--ink)" stroke="none">basin</text>
+  <rect x="566" y="70" width="34" height="46" rx="10" stroke-width="2"/><text x="572" y="132" ${F} font-size="11" fill="var(--ink)" stroke="none">WC</text>
+  <rect x="548" y="150" width="66" height="64" stroke-width="2"/><text x="556" y="188" ${F} font-size="11" fill="var(--ink)" stroke="none">shower</text>
+  <!-- bed and bed-head -->
+  <rect x="200" y="74" width="100" height="200" rx="6" stroke-width="2"/><rect x="200" y="74" width="100" height="34" stroke-width="1.5"/>
+  <text x="222" y="200" ${F} font-size="14" font-weight="700" fill="var(--ink)" stroke="none">BED</text>
+  <rect x="180" y="62" width="140" height="8" fill="var(--ink)" stroke="none"/><text x="186" y="56" ${F} font-size="12" fill="var(--ink)" stroke="none">bed-head wall</text>
+  <!-- clinical wash-hand basin -->
+  <rect x="556" y="462" width="56" height="32" rx="6" stroke-width="2"/><text x="500" y="456" ${F} font-size="12" fill="var(--ink)" stroke="none">wash-hand basin</text>
+  <!-- resuscitaire bay -->
+  <rect x="96" y="400" width="110" height="90" stroke-dasharray="4 4" stroke-width="1.5"/><text x="104" y="450" ${F} font-size="12" fill="var(--ink)" stroke="none">baby resus bay</text>
+  <!-- worktop -->
+  <rect x="588" y="270" width="28" height="150" stroke-width="2"/><text x="560" y="350" ${F} font-size="12" fill="var(--ink)" stroke="none" transform="rotate(-90 575 350)">worktop</text>
+</g>`;
+const SVC = `<g stroke="var(--svc)" fill="none">
+  <!-- correct outlets at bed-head -->
+  ${[205,225,275,295].map(x=>`<circle cx="${x}" cy="82" r="5" stroke-width="2"/>`).join('')}
+  <text x="236" y="98" ${F} font-size="11" fill="var(--svc)" stroke="none">sockets</text>
+  <!-- C2: medical gas outlets in window -->
+  ${[300,330,360].map(y=>`<circle cx="98" cy="${y}" r="7" stroke-width="2.5"/>`).join('')}
+  <text x="110" y="334" ${F} font-size="12" fill="var(--svc)" stroke="none">O₂ / vacuum / air</text>
+  <!-- C4: supply duct across window head -->
+  <rect x="50" y="190" width="300" height="22" stroke-width="2"/><text x="120" y="205" ${F} font-size="12" fill="var(--svc)" stroke="none">supply duct</text>
+  <rect x="350" y="186" width="30" height="30" stroke-width="2"/><path d="M350 186 L380 216 M380 186 L350 216" stroke-width="1"/>
+  <!-- cold water to basin -->
+  <path d="M620 300 H600 V462" stroke-width="2" stroke-dasharray="10 4"/>
+  <!-- C3: socket behind wash-hand basin -->
+  <circle cx="584" cy="486" r="7" stroke-width="2.5"/><path d="M579 486 H589 M584 481 V491" stroke-width="2"/>
+  <!-- C1: waste pipe through main door opening -->
+  <path d="M478 214 L440 540" stroke-width="5"/><text x="470" y="320" ${F} font-size="12" fill="var(--svc)" stroke="none">100 mm waste</text>
+  <!-- C5: radiator across en-suite doorway -->
+  <rect x="470" y="214" width="70" height="12" fill="var(--svc)" fill-opacity=".25" stroke-width="2"/><text x="490" y="244" ${F} font-size="11" fill="var(--svc)" stroke="none">radiator</text>
+  <!-- lights -->
+  ${[[250,330],[400,300],[520,400]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="10" stroke-width="1.5"/><path d="M${x-7} ${y-7} L${x+7} ${y+7} M${x+7} ${y-7} L${x-7} ${y+7}" stroke-width="1"/>`).join('')}
+</g>`;
+const CL = [
+  {x:446,y:500,r:38,name:'Waste pipe runs through the main door opening',grid:'C4',why:'A pipe in the doorway would sit under the door or in the floor where a bed and trolleys pass',fix:'Reroute the waste inside the en-suite wall or riser'},
+  {x:98,y:330,r:46,name:'Medical gas outlets are in the window opening',grid:'A2–A3',why:'Outlets cannot go in glazing, and the room data sheet puts them on the bed-head wall',fix:'Move the outlets to the bed-head wall beside the bed'},
+  {x:584,y:484,r:30,name:'Electrical socket sits behind the wash-hand basin',grid:'D4',why:'Electrical outlets must be kept clear of basins and splashing water',fix:'Move the socket along the wall, away from the basin'},
+  {x:80,y:201,r:32,name:'Supply duct crosses the window head',grid:'A1–A2',why:'The duct would block the top of the window; it belongs in the ceiling void',fix:'Reroute the duct across the ceiling, clear of the window'},
+  {x:505,y:220,r:36,name:'Radiator is fixed across the en-suite doorway',grid:'C1–D1',why:'Nobody could get into the en-suite',fix:'Move the radiator to a clear stretch of wall'}
+];
+document.getElementById('arch').innerHTML = GRID + ARCH;
+document.getElementById('svc').innerHTML = GRID + SVC;
+const ov = document.getElementById('overlay');
+ov.innerHTML = GRID + ARCH + `<g id="svcl">${SVC}</g><g id="marks"></g>`;
+document.getElementById('opacity').addEventListener('input', e => document.getElementById('svcl').style.opacity = e.target.value/100);
+let found = new Set(), misses = 0, left = 1200, timer = null;
+const $ = id => document.getElementById(id);
+function update(){ $('found').textContent = found.size + '/5'; $('miss').textContent = misses; $('clock').textContent = String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0'); }
+$('start').addEventListener('click', () => {
+  if (timer) return; $('start').textContent = 'Timer running';
+  timer = setInterval(() => { left = Math.max(0,left-1); update(); if(!left){clearInterval(timer); $('msg').textContent = 'Time is up. Check the answer sheet with your host.';} }, 1000);
+});
+ov.addEventListener('click', e => {
+  const pt = ov.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const p = pt.matrixTransform(ov.getScreenCTM().inverse());
+  const hit = CL.findIndex(c => Math.hypot(c.x-p.x, c.y-p.y) < c.r);
+  const marks = $('marks');
+  if (hit >= 0 && !found.has(hit)) {
+    found.add(hit); const c = CL[hit];
+    marks.insertAdjacentHTML('beforeend', `<circle cx="${c.x}" cy="${c.y}" r="${c.r-6}" fill="none" stroke="var(--red)" stroke-width="4"/><circle cx="${c.x+c.r-8}" cy="${c.y-c.r+8}" r="13" fill="var(--red)"/><text x="${c.x+c.r-8}" y="${c.y-c.r+13}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="14" fill="var(--red-ink)">${found.size}</text>`);
+    $('foundlist').insertAdjacentHTML('beforeend', `<li><b>${c.name}</b> (grid ${c.grid})</li>`);
+    $('msg').textContent = found.size === 5 ? 'All five found. Now write a TQ for one of them.' : 'Clash found.';
+  } else if (hit < 0) {
+    misses++; marks.insertAdjacentHTML('beforeend', `<path d="M${p.x-6} ${p.y-6} L${p.x+6} ${p.y+6} M${p.x+6} ${p.y-6} L${p.x-6} ${p.y+6}" stroke="var(--muted)" stroke-width="2"/>`);
+    $('msg').textContent = 'No clash there. Keep looking.';
+  }
+  update();
+});
+$('anstable').innerHTML = CL.map((c,i)=>`<tr><td class="t">${i+1}</td><td>${c.name}</td><td class="t">${c.grid}</td><td>${c.why}</td><td>${c.fix}</td></tr>`).join('');
+$('copytq').addEventListener('click', () => {
+  const v = id => $(id).value || '—';
+  const txt = `${v('tq-no')}\nRaised by: ${v('tq-by')}\nTo: ${v('tq-to')}\nDrawings: ${v('tq-dwg')}\nLocation: ${v('tq-loc')}\nAnswer needed by: ${v('tq-date')}\n\nProblem: ${v('tq-q')}\nSuggested solution: ${v('tq-s')}`;
+  const out = $('tqout'); out.value = txt;
+  const fallback = () => { out.hidden = false; out.select(); $('copymsg').textContent = 'Select and copy the text below.'; };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => $('copymsg').textContent = 'Copied.', fallback); else fallback();
+});
+const VIEWS = ['box','host','investigate','documents','tq','answers','portfolio'];
+function show(){ const v=(location.hash||'#box').slice(1); const view=VIEWS.includes(v)?v:'box';
+  document.querySelectorAll('[data-view]').forEach(s=>s.hidden=s.dataset.view!==view);
+  document.querySelectorAll('nav a').forEach(a=>a.setAttribute('aria-current', a.getAttribute('href')==='#'+view?'page':'false')); }
+window.addEventListener('hashchange', show); show(); update();
+</script>
+
+</body></html>
